@@ -1,0 +1,54 @@
+{% extends 'index.html' %}
+{% block content %}
+<style>
+    h1,h2,h3,h4,p,a{
+        font-family:Georgia, 'Times New Roman', Times, serif
+    }   
+</style>
+    <div class="container">
+        <!-- <h3>Welcome to my Application {{ request.session.logged_User }}</h3>  -->
+        	
+        <div class="col-md-8 mt-4">
+        	{% for i in ticket_qs %}
+
+			<div class="card w-80 mb-2">
+			  <div class="card-header bg-transparent ">
+			<div class="d-flex">
+			    <p class="card-text mr-auto" style="color: blueviolet;">{{ i.subject }}</p>
+			    <p class="card-text ml-auto">#{{ i.id }}</p>
+			</div>
+			</div>
+			  <div class="card-body">
+			    <!-- <h5 class="card-title">Success card title</h5> -->
+			    <p class="card-text">{{ i.description }}</p>
+			    <!-- Create an icon wrapped by the fa-stack class -->
+				<div class="d-flex justify-content ">
+				<span class="fa-stack">
+				    <!-- The icon that will wrap the number -->
+				    <!-- <i class="far fa-circle"></i> -->
+				    <span class="far fa-circle fa-stack-2x"></span>
+				    <!-- a strong element with the custom content, in this case a number -->
+				    <strong class="fa-stack-1x">
+
+				        {{ i.user.name|make_list|first }}    
+				    </strong>
+				</span>
+			      <p><i class="fas fa fa-dot  pl-2 pr-2">  .  </i>{{ i.department }}</p>
+			      <p><i class="fas fa fa-dot  pl-2 pr-2">  .  </i>{{ i.get_date }}</p>
+			      
+			    </div>
+			  </div>
+			  
+			</div>
+        	{% endfor %}
+
+
+
+		</div>
+		<div class="col-4">
+			
+		</div>
+
+
+    </div>
+{% endblock %}

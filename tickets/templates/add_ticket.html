@@ -1,0 +1,46 @@
+{% extends 'index.html' %}
+{% load crispy_forms_tags %}
+{% block content %}
+<html>
+<body>
+    <div class="container">
+
+
+          <div class="col-sm-10 ml-auto mr-auto">
+
+            <div class="container mb-5">
+            
+                <h4 class="mt-3"><strong>Submit a Ticket</strong></h4>
+                <div class="mt-5 p-3 shadow">
+                    
+        <form method="POST" action="add_ticket" enctype="multipart/form-data" class="uniForm">
+            <h5 class="mt-3"><strong>Ticket Information</strong></h5>
+            {% csrf_token %}
+            {{ form|crispy }}
+            {{ user_form|crispy }}
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+
+                </div>
+                        <div class="controls">
+                            <button type="button" class="btn btn-outline-primary"><a href="{% url 'Dashboard' %}"/>Back</button>
+                      </div>
+            </div>
+        </div>
+
+
+    </div>
+</body>
+</html>
+{% endblock %}
+
+   <!--  <div class=" row">
+        <div class="col-8">
+ 
+
+
+        </div>
+        <div class="col-4">
+            <p>    Popular Articles</p>
+        </div>    
+    </div> -->
