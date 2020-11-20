@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from .models import Ticket
 from django.core import serializers
 from .forms import TicketForm, UserForm
@@ -11,17 +11,24 @@ from django.template import loader
 from django.shortcuts import render, redirect, reverse
 from django.contrib.auth import get_user_model
 from .utils import upload_products_file_path, handle_uploaded_file
+import json
+import requests
+from django.contrib.humanize.templatetags import humanize
+import datetime
+import os
 User = get_user_model()
 
+auth_token = os.environ['AUTH_TOKEN']
+org_id=os.environ['ORG_ID']
 
+params="sortBy=-createdTime&limit=15"
 
-# def dashboard_with_pivot(request):
-#     return render(request, 'dashboard_with_pivot.html', {})
+headers={
+    "Authorization":auth_token,
+    "orgId":org_id,
+    "contentType": "application/json; charset=utf-8"
+}
 
-# def pivot_data(request):
-#     dataset = Order.objects.all()
-#     data = serializers.serialize('json', dataset)
-#     return JsonResponse(data, safe=False)
 
 def addTicket(request):
     if request.method == 'GET':
@@ -33,50 +40,48 @@ def addTicket(request):
 
         return render(request, 'add_ticket.html', {'form': TicketForm(),'user_obj': user_obj,'user_form':user_form})
     if request.method == 'POST':
-        form = TicketForm(request.POST, request.FILES)
-        if form.is_valid():
-            handle_uploaded_file(request.FILES['attach_file'])
-            form.user= request.session['logged_User'][2];
-            form.save()
-            return redirect(dashboard)
-        # print(form.errors)
-        # print(form.non_field_errors)
-    return render(request, 'add_ticket.html', {'form': TicketForm()})
+        try:
+
+            ticket_data={
+                    "departmentId":"7189000000010772",#request.POST['department'],
+                    
+
+                    "contactId":"7189000000125039",#request.POST['user'],
+                     
+                    "subject":request.POST['subject'],
+                    "email": request.POST['email'],
+                    "description":request.POST['description'],
+                    "priority": request.POST['priority'],
+                    "category": request.POST['category'],
+                    "phone": request.POST['phone']
+            }
+            print("ticket_data\n",ticket_data)
+            # print('json.dumps(ticket_data)',json.dumps(ticket_data))
+            
+            post_headers={
+                "Authorization":auth_token,
+                "orgId":org_id,
+                # "contentType": "application/json; charset=utf-8"
+            }
+            resp=requests.post('https://desk.zoho.in/api/v1/tickets', headers=post_headers,data=json.dumps(ticket_data))
+
+        
+            if resp.status_code == 200:
+                print("Data Posted Successful,Response:")
+                print(resp.content)
+            else:
+                print("Request not successful,Response code ",resp.status_code," \nResponse : ",resp.content)
+
+        except:
+            return redirect('add_ticket')
+            pass
+    return redirect('Dashboard')
 
 
-# def sendEmail(request):
-#     print("preparing to send mail")
-#     name="Sambit Kumar Sahoo"
-#     domain="http://weown.properties"
-#     body="http://weown.properties"
-#     body = loader.render_to_string('email.html', {'name':name,'domain':domain,'body':body})
-#     send_mail(
-#         subject = 'Weown Properties',
-#         message='',
-#         html_message = body,
-#         from_email = settings.EMAIL_HOST_USER,
-#         recipient_list = ['dj@yopmail.com','paridadibyajyoti4@gmail.com','sambitsahoo.sks@gmail.com'],
-#         fail_silently = False,
-#     )
-#     return HttpResponse("hii, Mail sent!!")
 
 def index(request):
     return render(request, 'home.html')
 
-
-# def userRegistration(request):
-#     if request.method=='POST':
-#         user = User(
-#             username = request.POST.get('username'),
-#             first_name = request.POST.get('first_name'),
-#             last_name = request.POST.get('last_name'),
-#             email = request.POST.get('email')
-#         )
-#         user.set_password(request.POST.get('password'))
-#         user.is_active = True
-#         user.save()
-#         return redirect(index)
-#     return render(request, 'registration.html')
 
 def userLogin(request):
     if request.method == 'POST':
@@ -93,12 +98,32 @@ def userLogin(request):
             return  HttpResponse("Exception: {}".format(e))
     return render(request, 'login.html')
 
+def get_date(date_val):
+    return humanize.naturaltime(date_val)
+
 def dashboard(request):
-    # print(request.user.email)
     user_id = request.session['logged_User'][0]
-    ticket_qs = Ticket.objects.filter(user_id=user_id)
+
+    resp=requests.get('https://desk.zoho.in/api/v1/tickets?'+params, headers=headers)
+    if resp.status_code == 200:
+        print("Request Successful,Response:")
+        print(resp.content)
+    else:
+        print("Request not successful,Response code ",resp.status_code," \nResponse : ",resp.content)
+    ticket_qs = json.loads(resp.content)['data']
+
+    # ticket_qs = Ticket.objects.filter(user_id=user_id)
+    for i in ticket_qs:
+        department_id = i['departmentId']
+        dept_resp = requests.get('https://desk.zoho.in/api/v1/departments/'+department_id,headers=headers)
+        # import pdb;pdb.set_trace()
+        dept_name = json.loads(dept_resp.content)['name']
+
+        i['departmentId'] = dept_name
+    #     i['created_on'] =datetime.datetime.strptime(i['createdTime'], "%Y-%m-%dT%H:%M:%S.%fZ")
+
     context = {'ticket_qs':ticket_qs}
-    # import pdb;pdb.set_trace()
+    # print(ticket_qs['data'])
     return render(request, 'dashboard.html',context)
 
 def logout(request):
